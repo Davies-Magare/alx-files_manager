@@ -1,0 +1,13 @@
+# Node modules
+node_modules/
+
+# Babel configuration files
+babel.config.js
+
+# Package lock file
+package-lock.json
+
+# Main file (if it shouldn't be tracked)
+main.js
+
+
