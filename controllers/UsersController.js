@@ -1,5 +1,5 @@
 const dbClient = require('../utils/db.js');
-const crypto = require('crypto');
+import sha1 from "sha1"
 const redisClient = require('../utils/redis.js');
 
 const postNew = function(req, res) {
@@ -14,7 +14,7 @@ const postNew = function(req, res) {
       if (user) {
         res.status(400).json({error: 'Already exist'});
       }
-      const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
+      const hashedPassword = sha1(password);
       const userData = {email: email, password: hashedPassword};
       dbClient.db.collection('users').insertOne(userData, (err, result) => {
         if (err) console.log(err);
