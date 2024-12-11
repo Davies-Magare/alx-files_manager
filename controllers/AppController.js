@@ -8,7 +8,7 @@ const getStatus = async function(req, res) {
     
     res.status(200).send({ redis: redisAlive, db: dbAlive });
   } catch (error) {
-    res.status(500).json({ error: 'Unable to check status' });
+    res.status(500).send({ error: 'Unable to check status' });
   }
 }
 
@@ -22,7 +22,7 @@ const getStats = async function(req, res) {
       files: fileCount
     });
   } catch (error) {
-    res.status(500).json({ error: 'Unable to fetch stats' });
+    res.status(500).send({ error: 'Unable to fetch stats' });
   }
 }
 
