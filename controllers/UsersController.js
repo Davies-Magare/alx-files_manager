@@ -19,7 +19,7 @@ class UsersController {
       try {
         const user = await users.findOne({ email });
         if (user) {
-          return res.status(400).json({ error: "Already exists" });
+          return res.status(400).json({ error: "Already exist" });
         }
 
         const hashedPw = crypto.createHash('sha1').update(password).digest("hex");
