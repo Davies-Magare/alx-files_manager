@@ -40,20 +40,27 @@ class AuthController {
   }
 
   static getDisconnect(req, res) {
-    const token = req.headers['x-token'];
-    if (!token) {
+  const token = req.headers['x-token'];
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  redisClient.get(`auth_${token}`).then((userId) => {
+    if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     redisClient.del(`auth_${token}`).then(() => {
       return res.status(204).end();
     }).catch((error) => {
-      //console.error('Error deleting Redis key:', error);
       return res.status(500).json({ error: 'Internal server error' });
     });
-    return res.status(204).end();
-  }
+  }).catch((error) => {
+    return res.status(500).json({ error: 'Internal server error' });
+  });
+ }
 }
+
 
 module.exports = AuthController;
 
