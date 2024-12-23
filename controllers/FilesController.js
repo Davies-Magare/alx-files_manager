@@ -141,13 +141,14 @@ class FilesController {
       const { parentId = 0, page = 0 } = req.query;
       const files = dbClient.client.db(dbClient.database).collection("files");
       const parsedInt = parseInt(parentId, 10);
+      const parsedPage = parseInt(page, 10);
       let result = await files.aggregate([
         {
           $match: {
 	    parentId: parsedInt
 	  }
 	},
-	{ $skip: page * 20 },
+	{ $skip: parsedPage * 20 },
 	{ $limit: 20 }
       ]).toArray();
       result = result.map((file) => {
