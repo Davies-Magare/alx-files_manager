@@ -105,6 +105,63 @@ class FilesController {
       return res.status(500).json({ error: "Server error" });
     }
   }
+  static async getShow(req, res) {
+    const id = req.params.id;
+    //Retrieve user based on token
+    const token = req.headers['x-token'];
+    try {
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        return res.status(401).json({error: 'Unauthorized'});
+      }
+      const files = dbClient.client.db(dbClient.database).collection("files");
+      const file = await files.findOne({_id: ObjectId(id)});
+      if (!file) {
+        return res.status(404).json({error: "Not found"});
+      }
+      //Replace _id key
+      file.id = file['_id'];
+      delete file['_id'];
+      return res.status(200).json(file);
+    } catch(error) {
+      return res.status(500).json({error: "Server error"});
+    }
+  }
+  static async getIndex(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      if (!token) {
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      //get the page and parentId from request
+      const { parentId = 0, page = 0 } = req.query;
+      const files = dbClient.client.db(dbClient.database).collection("files");
+      const parsedInt = parseInt(parentId, 10);
+      let result = await files.aggregate([
+        {
+          $match: {
+	    parentId: parsedInt
+	  }
+	},
+	{ $skip: page * 20 },
+	{ $limit: 20 }
+      ]).toArray();
+      result = result.map((file) => {
+        return {
+	  ...file,
+	  id: file._id,
+	  _id: undefined
+        };
+      });
+      return res.status(200).json(result);
+    } catch(error) {
+        return res.status(500).json({error: "Server Error"});
+    }
+  }
 }
 
 module.exports = FilesController;
