@@ -34,28 +34,14 @@ class FilesController {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      // ParentId validation
-      if (parentId !== 0) {
-        const parentFile = await files.findOne({ _id: ObjectId(parentId) });
-        
-        if (!parentFile) {
-          return res.status(400).json({ error: "Parent not found" });
-        }
-
-        if (parentFile.type !== 'folder') {
-          return res.status(400).json({ error: "Parent is not a folder" });
-        }
-      }
-
-      let fileData;
       if (type === 'folder') {
-        // Insert folder directly into MongoDB
-        fileData = { name, type, parentId, isPublic, userId };
-        const insertResult = await files.insertOne(fileData);
-        const savedFile = await files.findOne({ _id: insertResult.insertedId });
-
+        // Insert folder into MongoDB
+        const folder = { name, type, parentId, isPublic, userId };
+        const insertResult = await files.insertOne(folder);
+        
+        // Respond with formatted folder data
         return res.status(201).json({
-          id: savedFile._id,
+          id: insertResult.insertedId,
           userId,
           name,
           type,
@@ -63,7 +49,7 @@ class FilesController {
           parentId
         });
       } else {
-        // Handle file upload to disk
+        // Create file and store it locally and in the database
         const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
         const fileBuffer = Buffer.from(data, 'base64');
         const fileName = `${uuidv4()}`;
@@ -78,21 +64,19 @@ class FilesController {
         fs.writeFileSync(filePath, fileBuffer);
 
         // Insert file metadata into MongoDB
-        fileData = {
+        const fileDocument = {
           name,
           type,
           parentId,
           isPublic,
           userId,
-          localPath: filePath
+          localPath: filePath  // Will not return this in the response
         };
+        const insertResult = await files.insertOne(fileDocument);
 
-        const insertResult = await files.insertOne(fileData);
-        const savedFile = await files.findOne({ _id: insertResult.insertedId });
-
-        // Return response (exclude localPath)
+        // Respond with the formatted file data (exclude localPath)
         return res.status(201).json({
-          id: savedFile._id,
+          id: insertResult.insertedId,
           userId,
           name,
           type,
