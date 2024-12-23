@@ -158,7 +158,7 @@ class FilesController {
 	  _id: undefined
         };
       });
-      return res.status(200).json(result);
+      return res.json(result);
     } catch(error) {
         return res.status(500).json({error: "Server Error"});
     }
