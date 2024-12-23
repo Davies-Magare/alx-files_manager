@@ -106,27 +106,50 @@ class FilesController {
     }
   }
   static async getShow(req, res) {
+  try {
     const id = req.params.id;
-    //Retrieve user based on token
     const token = req.headers['x-token'];
-    try {
-      const userId = await redisClient.get(`auth_${token}`);
-      if (!userId) {
-        return res.status(401).json({error: 'Unauthorized'});
-      }
-      const files = dbClient.client.db(dbClient.database).collection("files");
-      const file = await files.findOne({_id: ObjectId(id)});
-      if (!file) {
-        return res.status(404).json({error: "Not found"});
-      }
-      //Replace _id key
-      file.id = file['_id'];
-      delete file['_id'];
-      return res.status(200).json(file);
-    } catch(error) {
-      return res.status(500).json({error: "Server error"});
+
+    // Check if the token is present
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Retrieve the user ID from Redis
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Validate the provided id
+    if (!ObjectId.isValid(id)) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    // Query the database for the file with matching _id and userId
+    const files = dbClient.client.db(dbClient.database).collection("files");
+    const file = await files.findOne({ _id: new ObjectId(id), userId });
+
+    // If no file is found, return 404
+    if (!file) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    // Transform _id to id
+    const responseFile = {
+      ...file,
+      id: file._id,
+    };
+    delete responseFile._id;
+
+    return res.status(200).json(responseFile);
+
+  } catch (error) {
+    console.error("Error in getShow:", error);
+    return res.status(500).json({ error: "Server error" });
     }
   }
+
   static async getIndex(req, res) {
     try {
       const token = req.headers['x-token'];
