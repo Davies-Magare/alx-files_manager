@@ -166,6 +166,65 @@ class FilesController {
         return res.status(500).json({error: "Server Error"});
     }
   }
+  static async putPublish(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      //Get user from the database
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      const { id } = req.params;
+      if (!ObjectId.isValid(id)){
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      const result = await files.findOne({userId, _id: new ObjectId(id)});
+      if(!result){
+        return res.status(404).json({error: "Not found"});
+      }
+      await files.updateOne({userId, _id: new ObjectId(id)}, {$set: {isPublic: true}});
+      const { _id, localPath, ...fileData } = result;
+      return res.status(200).json({
+        ...fileData,
+        id: _id,
+        isPublic: true
+      });
+    } catch(error) {
+      return res.status(500).json({error: "Server error"});
+    }
+  }
+
+  static async putUnpublish(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        return res.status(401).json({error: "Unauthorized"});
+      }
+      //Get user from the database
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      const { id } = req.params;
+      if (!ObjectId.isValid(id)){
+        return res.status(404).json({error: "Not found"});
+      }
+      //Retrieve document from database
+      const result = await files.findOne({userId, _id: new ObjectId(id)});
+      if(!result){
+        return res.status(404).json({error: "Not found"});
+      }
+      await files.updateOne({userId, _id: new ObjectId(id)}, {$set: {isPublic: false}});
+      const { _id, localPath, ...fileData } = result;
+      return res.status(200).json({
+        ...fileData,
+        id: _id,
+        isPublic: false
+      });
+    } catch(error) {
+      return res.status(500).json({error: "Server error"});
+    }
+  }
+
 }
 
 module.exports = FilesController;
